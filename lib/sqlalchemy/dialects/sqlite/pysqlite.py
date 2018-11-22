@@ -66,6 +66,15 @@ present.  Specify ``sqlite://`` and nothing else::
     # in-memory database
     e = create_engine('sqlite://')
 
+If you wish to use the `sqlite3 URI format https://www.sqlite.org/uri.html`_,
+available in Python 3.4 and greater,
+you can pass a :class:`~sqlalchemy.engine.url.URL` with the ``database`` param
+as the URI, and ``'uri': True`` in the ``query`` param::
+
+    # read-only SQLite URI
+    sqlite_uri = 'file:///path/to/database.db?mode=ro'
+    e = create_engine(sqlite.engine.url.URL(sqlite_uri, query={"uri": True}))
+
 Compatibility with sqlite3 "native" date and datetime types
 -----------------------------------------------------------
 
@@ -357,9 +366,6 @@ class SQLiteDialect_pysqlite(SQLiteDialect):
                 " sqlite:///:memory: (or, sqlite://)\n"
                 " sqlite:///relative/path/to/file.db\n"
                 " sqlite:////absolute/path/to/file.db" % (url,))
-        filename = url.database or ':memory:'
-        if filename != ':memory:':
-            filename = os.path.abspath(filename)
 
         opts = url.query.copy()
         util.coerce_kw_type(opts, 'timeout', float)
@@ -367,6 +373,12 @@ class SQLiteDialect_pysqlite(SQLiteDialect):
         util.coerce_kw_type(opts, 'detect_types', int)
         util.coerce_kw_type(opts, 'check_same_thread', bool)
         util.coerce_kw_type(opts, 'cached_statements', int)
+        util.coerce_kw_type(opts, 'uri', bool) # sqlite3 in Python >= 3.4
+
+        filename = url.database or ':memory:'
+        # don't take abspath if we've been told url.database is a uri
+        if filename != ':memory:' and not opts.get("uri", False):
+            filename = os.path.abspath(filename)
 
         return ([filename], opts)
 
