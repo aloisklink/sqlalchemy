@@ -17,7 +17,7 @@ from sqlalchemy.util import u, ue
 from sqlalchemy import exc, sql, schema, pool, util
 from sqlalchemy.dialects.sqlite import base as sqlite, \
     pysqlite as pysqlite_dialect
-from sqlalchemy.engine.url import make_url
+from sqlalchemy.engine.url import make_url, URL
 from sqlalchemy.testing import fixtures, AssertsCompiledSQL, \
     AssertsExecutionResults, engines
 from sqlalchemy import testing
@@ -586,6 +586,17 @@ class DialectTest(fixtures.TestBase, AssertsExecutionResults):
             d.create_connect_args(make_url('sqlite:///foo.db')),
             ([os.path.abspath('foo.db')], {})
         )
+
+    def test_connecting_with_uri(self):
+        d = pysqlite_dialect.dialect()
+        uri = 'file://?mode=memory'
+        eq_(
+            d.create_connect_args(URL(uri, query={"uri": True})),
+            ([uri], {"uri": True})
+        )
+        if py34:
+            # should only work for Python 3.4 or greater
+            e.create_engine(URL(uri, query={"uri": True}))
 
     def test_pool_class(self):
         e = create_engine('sqlite+pysqlite://')
